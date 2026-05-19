@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 from PIL import Image
 from scipy.interpolate import UnivariateSpline
-from inference.types import CobbResult
 
 from constants.id2rgb import ID2RGB
+from inference.types import CobbResult
 
 
 class SpineRenderer:
@@ -33,23 +33,23 @@ class SpineRenderer:
 
     def __call__(
         self,
-        image: np.ndarray,
+        img: np.ndarray,
         preds: np.ndarray,
         centers: np.ndarray,
         spline: UnivariateSpline,
         cobb: CobbResult,
     ) -> Image.Image:
         """Return a PIL Image with all spine annotations rendered."""
-        canvas = self._prepare_canvas(image)
+        canvas = self._prepare_canvas(img)
         self._draw_segmentation(canvas, preds)
         self._draw_centers(canvas, centers)
         self._draw_spline(canvas, spline, centers)
         self._draw_cobb(canvas, cobb)
         return Image.fromarray(canvas)
 
-    def _prepare_canvas(self, image: np.ndarray) -> np.ndarray:
+    def _prepare_canvas(self, img: np.ndarray) -> np.ndarray:
         """Normalize and convert grayscale image to RGB canvas."""
-        img = image.copy()
+        img = img.copy()
         if img.max() <= 1.0:
             img = (img * 255).astype(np.uint8)
         if img.dtype != np.uint8:
@@ -63,9 +63,8 @@ class SpineRenderer:
             mask_class = preds == class_id
             colored[mask_class] = ID2RGB.get(class_id, (255, 255, 255))
         mask = preds > 0
-        canvas[mask] = (
-            (1 - self.alpha) * canvas[mask] + self.alpha * colored[mask]
-        ).astype(np.uint8)
+        blended = (1 - self.alpha) * canvas[mask] + self.alpha * colored[mask]
+        canvas[mask] = blended.astype(np.uint8)
 
     def _draw_centers(self, canvas: np.ndarray, centers: np.ndarray) -> None:
         """Draw vertebra centers."""
@@ -82,7 +81,8 @@ class SpineRenderer:
         self, canvas: np.ndarray, spline: UnivariateSpline, centers: np.ndarray
     ) -> None:
         """Draw the fitted spline."""
-        ys = np.linspace(centers[:, 1].min(), centers[:, 1].max(), self._SPLINE_SAMPLES)
+        y_min, y_max = centers[:, 1].min(), centers[:, 1].max()
+        ys = np.linspace(y_min, y_max, self._SPLINE_SAMPLES)
         xs = spline(ys)
         pts = np.stack([xs, ys], axis=1).astype(np.int32)
         for i in range(len(pts) - 1):

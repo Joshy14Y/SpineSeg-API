@@ -18,12 +18,12 @@ class SpineGeometry:
         self.max_valleys = max_valleys
         self.min_pixels = min_pixels
 
-    def __call__(self, id_mask: np.ndarray) -> np.ndarray:
+    def __call__(self, mask: np.ndarray) -> np.ndarray:
         """Return vertebra centers as (x, y) pairs sorted top to bottom."""
-        mask = id_mask > 0
-        valleys = self._find_valleys(mask)
-        bands = self._build_bands(valleys, mask.shape[0])
-        return self._extract_centers(mask, bands)
+        seg_mask = mask > 0
+        valleys = self._find_valleys(seg_mask)
+        bands = self._build_bands(valleys, seg_mask.shape[0])
+        return self._extract_centers(seg_mask, bands)
 
     def _find_valleys(self, mask: np.ndarray) -> np.ndarray:
         """Find row indices where vertebrae are separated, sorted by prominence."""
@@ -36,9 +36,9 @@ class SpineGeometry:
         order = np.argsort(props["prominences"])[::-1]
         return np.sort(valleys[order[: self.max_valleys]])
 
-    def _build_bands(self, valleys: np.ndarray, image_height: int) -> list[tuple]:
+    def _build_bands(self, valleys: np.ndarray, img_height: int) -> list[tuple]:
         """Slice the image into vertical bands between consecutive valleys."""
-        cuts = [0] + valleys.tolist() + [image_height]
+        cuts = [0] + valleys.tolist() + [img_height]
         return [(cuts[i], cuts[i + 1]) for i in range(len(cuts) - 1)]
 
     def _extract_centers(self, mask: np.ndarray, bands: list[tuple]) -> np.ndarray:

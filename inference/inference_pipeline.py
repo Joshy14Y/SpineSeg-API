@@ -1,6 +1,7 @@
 import numpy as np
+import onnxruntime as ort
 from PIL import Image
-import torch
+
 from inference.cobb_angle_estimator import CobbAngleEstimator
 from inference.confidence_estimator import ConfidenceEstimator
 from inference.preprocessing_pipeline import PreprocessingPipeline
@@ -13,7 +14,7 @@ from inference.types import PipelineResult
 class InferencePipeline:
     """Runs the full spine analysis pipeline on a single image."""
 
-    def __init__(self, model: torch.nn.Module):
+    def __init__(self, model: ort.InferenceSession):
         """Initialize all pipeline components."""
         self.preprocess = PreprocessingPipeline()
         self.segment = SegmentationModel(model)
@@ -22,19 +23,19 @@ class InferencePipeline:
         self.confidence = ConfidenceEstimator()
         self.renderer = SpineRenderer()
 
-    def __call__(self, image_bytes: bytes) -> PipelineResult:
+    def __call__(self, img_bytes: bytes) -> PipelineResult:
         """Run inference and return results with rendered image."""
-        preprocessed = self.preprocess(image_bytes)
+        preprocessed = self.preprocess(img_bytes)
         segmentation = self.segment(preprocessed.tensor)
-        id_mask = segmentation.id_mask
-        centers = self.geometry(id_mask)
+        mask = segmentation.mask
+        centers = self.geometry(mask)
         spline, cobb = self.cobb(centers)
-        vertebrae = self.confidence(id_mask, segmentation.probs, centers)
-        render = self.renderer(preprocessed.image_np, id_mask, centers, spline, cobb)
-        id_mask_img = Image.fromarray(id_mask.astype(np.uint8))
+        vertebrae = self.confidence(mask, segmentation.probs, centers)
+        annotated_img = self.renderer(preprocessed.np_img, mask, centers, spline, cobb)
+        mask_img = Image.fromarray(mask.astype(np.uint8))
         return PipelineResult(
-            mask_img=id_mask_img.crop(preprocessed.crop_box),
-            annotated_img=render.crop(preprocessed.crop_box),
+            mask_img=mask_img.crop(preprocessed.crop_box),
+            annotated_img=annotated_img.crop(preprocessed.crop_box),
             vertebrae=vertebrae,
             cobb_angle=cobb.angle,
         )

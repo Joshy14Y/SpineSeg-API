@@ -18,7 +18,8 @@ class CobbAngleEstimator:
         min_separation: float = 40.0,
         apex_tolerance: float = 30.0,
     ):
-        """Configure spline degree, smoothing factor, and minimum endpoint separation."""
+        """Configure spline degree, smoothing factor, and minimum endpoint
+        separation."""
         self.k = k
         self.s = s
         self.min_separation = min_separation

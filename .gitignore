@@ -4,13 +4,21 @@ __pycache__/
 *.pyo
 .venv/
 
+# Tooling
+.ruff_cache/
+
 # Environment
 .env
 
 # Weights
 weights/
 
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+
 # Jupyter
+notebooks/
 .ipynb_checkpoints/
 *.ipynb
 

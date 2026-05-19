@@ -1,4 +1,4 @@
-ID2RGB: dict[int, tuple[int, int, int]] = {
+ID2RGB = {
     0: (0, 0, 0),
     1: (242, 209, 12),
     2: (235, 242, 12),

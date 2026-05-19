@@ -14,8 +14,8 @@ Takes a grayscale X-ray image and returns:
 ## Requirements
 
 - Python 3.10+
-- CUDA-capable GPU recommended (CPU inference ~60s/image)
-- Model weights file (`.pth`)
+- CPU inference under 1s/image
+- Model weights file (`.onnx`)
 
 ## Installation
 
@@ -29,22 +29,17 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Place your model weights at `weights/u_net.pth`.
+Place your model weights at `weights/u_net.onnx`.
 
 ## Configuration
 
-Create a `.env` file in the project root:
+Set the following environment variables or define them in a `.env` file:
 
-```env
-DEVICE=cuda
-PORT=8080
-```
-
-| Variable       | Default               | Description                      |
-|----------------|-----------------------|----------------------------------|
-| `DEVICE`       | `cuda`                | PyTorch device (`cuda` or `cpu`) |
-| `PORT`         | `8080`                | Server port                      |
-| `WEIGHTS_PATH` | `weights/u_net.pth`   | Path to model weights            |
+| Variable       | Default                | Description              |
+|----------------|------------------------|--------------------------|
+| `PORT`         | `8080`                 | Server port              |
+| `WEIGHTS_PATH` | —                      | Path to model weights    |
+| `FRONTEND_URL` | —                      | Allowed CORS origin      |
 
 ## Running
 
@@ -73,7 +68,7 @@ curl -X POST http://localhost:{PORT}/segment \
   "mask_img": "<base64 PNG>",
   "cobb_angle": 24.7,
   "vertebrae": [
-    { "id": 1, "confidence": 0.9821 }
+    { "uid": "a3f1", "class_id": 1, "confidence": 0.9821 }
   ]
 }
 ```
