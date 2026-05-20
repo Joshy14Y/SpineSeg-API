@@ -26,6 +26,7 @@ app.add_middleware(
 
 app.include_router(inference.router)
 
+
 @app.get("/")
 async def root():
     """Health check and welcome message."""

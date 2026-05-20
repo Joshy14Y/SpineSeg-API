@@ -56,4 +56,13 @@ class SpineGeometry:
         if region.sum() < self.min_pixels:
             return None
         ys, xs = np.where(region)
-        return (xs.mean(), y0 + ys.mean())
+        cx, cy = xs.mean(), y0 + ys.mean()
+        if not self._is_valid_center(mask, cx, cy):
+            return None
+        return (cx, cy)
+
+    def _is_valid_center(self, mask: np.ndarray, cx: float, cy: float) -> bool:
+        """Check that the centroid lands on a foreground pixel."""
+        row = min(int(round(cy)), mask.shape[0] - 1)
+        col = min(int(round(cx)), mask.shape[1] - 1)
+        return bool(mask[row, col])
