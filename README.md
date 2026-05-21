@@ -1,27 +1,78 @@
-# SpineSeg Inference API
+# SpineSeg — Automatic Vertebrae Segmentation in Radiographies using Deep Learning
 
-Automated spine segmentation and Cobb angle estimation from X-ray images, built with FastAPI and a custom UNet architecture.
+**SpineSeg** is the backend service for an automated spine analysis system. It receives a grayscale X-ray image and returns a Cobb angle estimation, a per-vertebra segmentation mask, and an annotated overlay image — supporting the clinical screening of spinal deformities such as scoliosis.
+
+![API Status](https://img.shields.io/website?url=https://spineseg-api-production.up.railway.app/docs&label=API)
+![Python](https://img.shields.io/badge/python-3.10+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)
+![ONNX](https://img.shields.io/badge/ONNX-Runtime-005CED?logo=onnx&logoColor=white)
+![Deployed on Railway](https://img.shields.io/badge/deployed-Railway-6765F8)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+**Team:** Joshua Sancho, Andrés Castellano, Camilo Albarracín, Nicolás Sánchez, Sebastián Morelli
+
+---
+
+## Relevant Links
+
+| Resource | URL |
+|---|---|
+| 🌐 Frontend app | https://spineseg-a1a25.web.app |
+| 🔌 API (live) | https://spineseg-api-production.up.railway.app |
+| 📖 API docs (auto-generated) | https://spineseg-api-production.up.railway.app/docs |
+| 🧠 Model weights (`.onnx`) | [SharePoint — SpineSeg](https://uniandes-my.sharepoint.com/:f:/r/personal/j_sancho_uniandes_edu_co/Documents/SpineSeg?csf=1&web=1&e=UB9ujb) |
+
+---
+
+## Architecture
+
+This is the **backend** repository. The full system is split across three independent repos:
+
+- **Training** — data pipeline, model training, and evaluation
+- **Backend** ← you are here — FastAPI inference service
+- **Frontend** — web interface for uploading X-rays and viewing results
+
+---
 
 ## What it does
 
-Takes a grayscale X-ray image and returns:
+Takes a grayscale spine X-ray and returns:
 
 - Annotated image with segmentation overlay, vertebra centers, spline, and Cobb angle lines
-- Segmentation mask where pixel values correspond to vertebra IDs
+- Segmentation mask (pixel values correspond to vertebra IDs)
 - Cobb angle in degrees
 - Per-vertebra segmentation confidence scores
 
-## Requirements
+---
 
-- Python 3.10+
-- CPU inference under 1s/image
-- Model weights file (`.onnx`)
+## Model Considerations
+
+| Property | Detail |
+|---|---|
+| Architecture | Custom UNet |
+| Format | ONNX (`.onnx`) |
+| Runtime | ONNX Runtime (CPU) |
+| Inference time | < 1 second per image |
+| Hardware requirement | CPU-only; no GPU required |
+| Weights location | See link above — too large for Git |
+
+> Download the weights file and place it at `weights/u_net.onnx` before running the server.
+
+---
+
+## Dependencies
+
+Dependencies are managed via `requirements.txt`. Install them inside a virtual environment (see setup steps below).
+
+Key libraries include FastAPI, ONNX Runtime, OpenCV, Pillow, NumPy, and python-dotenv. Refer to `requirements.txt` for the full pinned list.
+
+---
 
 ## Installation
 
 ```bash
-git clone https://github.com/your-username/scoliosis-project.git
-cd scoliosis-project
+git clone https://github.com/Joshy14Y/SpineSeg-API.git
+cd SpineSeg-API
 
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
@@ -29,25 +80,56 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Place your model weights at `weights/u_net.onnx`.
+Then download the model weights from the link above and place them at:
+
+```
+weights/unet_v4.3.onnx
+```
+
+---
 
 ## Configuration
 
-Set the following environment variables or define them in a `.env` file:
+Create a `.env` file in the project root (or set these as environment variables):
 
-| Variable       | Default                | Description              |
-|----------------|------------------------|--------------------------|
-| `PORT`         | `8080`                 | Server port              |
-| `WEIGHTS_PATH` | —                      | Path to model weights    |
-| `FRONTEND_URL` | —                      | Allowed CORS origin      |
+```env
+PORT=8080
+WEIGHTS_PATH=weights/unet_v4.3.onnx
+FRONTEND_URL=https://spineseg-a1a25.web.app
+```
 
-## Running
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8080` | Port the server listens on |
+| `WEIGHTS_PATH` | `weights/unet_v4.3.onnx` | Path to the `.onnx` model weights file |
+| `FRONTEND_URL` | `http://localhost:4200` | Allowed CORS origin (your frontend URL) |
+
+> No API keys or secrets are required to run the service locally.
+
+---
+
+## Running locally
 
 ```bash
 python main.py
 ```
 
-API docs available at `http://localhost:{PORT}/docs`.
+Interactive API docs will be available at `http://localhost:8080/docs`.
+
+---
+
+## Deployment
+
+The API is deployed on **Railway**. To replicate the deployment:
+
+1. Create a new Railway project and connect this repository.
+2. Set the environment variables (`WEIGHTS_PATH`, `FRONTEND_URL`, `PORT`) in Railway's service settings.
+3. Upload the `.onnx` weights file or mount it as a volume — Railway does not pull it from Git.
+4. Railway will auto-detect the Python service and deploy on push to `main`.
+
+Live URL: `https://spineseg-api-production.up.railway.app`
+
+---
 
 ## API
 
@@ -55,8 +137,10 @@ API docs available at `http://localhost:{PORT}/docs`.
 
 Upload a spine X-ray and run the full inference pipeline.
 
+**Expected input:** a grayscale JPEG or PNG image of a spine X-ray.
+
 ```bash
-curl -X POST http://localhost:{PORT}/segment \
+curl -X POST https://spineseg-api-production.up.railway.app/segment \
   -F "image=@xray.jpg"
 ```
 
@@ -73,7 +157,7 @@ curl -X POST http://localhost:{PORT}/segment \
 }
 ```
 
-**Decoding images**
+**Decoding the images in Python**
 
 ```python
 import base64
@@ -81,6 +165,11 @@ from PIL import Image
 from io import BytesIO
 
 image = Image.open(BytesIO(base64.b64decode(result["annotated_img"])))
+image.show()
 ```
+
+Full interactive documentation (request schema, response model, try-it-out) is auto-generated by FastAPI at `/docs`.
+
+---
 
 *SpineSeg — Graduation Project, Computer Vision & Deep Learning*
