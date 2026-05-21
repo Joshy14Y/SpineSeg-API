@@ -56,7 +56,7 @@ Takes a grayscale spine X-ray and returns:
 | Hardware requirement | CPU-only; no GPU required |
 | Weights location | See link above — too large for Git |
 
-> Download the weights file and place it at `weights/u_net.onnx` before running the server.
+> Download the weights file and place it at the path defined in `WEIGHTS_PATH` before running the server.
 
 ---
 
@@ -80,11 +80,7 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Then download the model weights from the link above and place them at:
-
-```
-weights/unet_v4.3.onnx
-```
+Then download the model weights from the link above and place them at the path defined in `WEIGHTS_PATH` (default: `weights/unet_v4.3.onnx`).
 
 ---
 
